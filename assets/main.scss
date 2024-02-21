@@ -9,7 +9,10 @@ $gap-top-sm: 3vh;
 $gap-sm: 2vh;
 $gap-md: 5vh;
 $gap-lg: 7vh;
-$mb: 1.6rem;
+
+$mb-xs: 0.5rem;
+$mb-sm: 1rem;
+$mb-md: 1.6rem;
 
 $color-primary-500: #8BC091;
 
@@ -42,7 +45,7 @@ pre {
 
   code {
     font-family: "Iosevka Web", monospace;
-    margin-bottom: $mb;
+    margin-bottom: $mb-md;
 
     .line > * {
       line-height: 1.25rem;
@@ -118,7 +121,7 @@ footer {
   flex-direction: column;
   row-gap: 0.5em;
   max-width: $container-m-lg;
-  margin: $gap-md auto $mb;
+  margin: $gap-md auto $mb-md;
 
   .contact {
     ul {
@@ -165,17 +168,38 @@ main {
   margin: 0 auto;
 
 
+  header {
+    margin-bottom: $mb-md;
+
+    h1 {
+      margin-bottom: $mb-xs;
+    }
+
+    .readtime {
+      color: dimgray;
+    }
+
+    .tags {
+      font-size: 0.9rem;
+
+      a:not(:last-child):after {
+        content: " -";
+      }
+    }
+  }
+
+
   h1, h2, h3, h4, h5, h6 {
-    margin-bottom: $mb;
+    margin-bottom: $mb-md;
   }
 
   p {
-    margin-bottom: $mb;
+    margin-bottom: $mb-md;
     line-height: 1.35em;
   }
 
   ul {
-    margin: 0 0 $mb 1rem;
+    margin: 0 0 $mb-md 1rem;
     padding: 0;
     list-style-type: disc;
 

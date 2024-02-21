@@ -1,0 +1,12 @@
+{{ define "main" }}
+
+<div class="page-section">
+    <header>
+        <h1>{{ .Title }}</h1>
+        <span class="date">{{ time.Format ":date_long" .Date }};</span>
+        <span class="readtime">{{ .ReadingTime }} minutos de leitura</span>
+        <span class="tags">{{ range .Params.tags }}<a href="/tags/{{ . }}">{{ . }}</a> {{ end }}</span>
+    </header>
+    {{ .Content }}
+</div>
+{{ end }}
