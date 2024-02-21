@@ -118,7 +118,7 @@ footer {
   flex-direction: column;
   row-gap: 0.5em;
   max-width: $container-m-lg;
-  margin: $gap-md auto 0;
+  margin: $gap-md auto $mb;
 
   .contact {
     ul {
@@ -135,11 +135,12 @@ main {
 
 .entry-overview {
   max-width: $container-m-md;
-  margin: 0 auto $mb auto;
+  margin: 0 auto 2.5em auto;
   display: flex;
 
   .date {
     flex-shrink: 0;
+    color: dimgray;
     width: 200px;
   }
 
