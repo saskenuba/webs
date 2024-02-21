@@ -3,7 +3,8 @@ title = "A estrada do machine learning"
 date = 2018-04-02
 lastmod = 2022-11-12T23:21:06-03:00
 draft = false
-weight = 2009
+weight = 2008
+url = "/post/9/a-estrada-do-machine-learning"
 +++
 
 Algo que me impulsionou a ir um pouco mais a fundo nos fundamentos do machine

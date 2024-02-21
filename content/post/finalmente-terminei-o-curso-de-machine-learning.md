@@ -1,9 +1,9 @@
 +++
 title = "Finalmente terminei o curso de machine learning!"
 date = 2017-11-10
-lastmod = 2024-02-20T20:39:45-03:00
+lastmod = 2024-02-21T00:59:46-03:00
 draft = false
-weight = 2010
+weight = 2009
 url = "/post/7"
 +++
 

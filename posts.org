@@ -2,6 +2,7 @@
 #+HUGO_BASE_DIR: .
 #+HUGO_SECTION: ./post/
 #+HUGO_WEIGHT: auto
+#+options: tex:dvisvgm
 
 * General
 
@@ -867,6 +868,7 @@ utilizar a medida apropriada. Espero ter ajudado nesta questão bem interessante
 ** DONE A estrada do machine learning
 :PROPERTIES:
 :EXPORT_FILE_NAME: a-estrada-do-machine-learning
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/9/a-estrada-do-machine-learning"
 :EXPORT_DATE: 2018-04-02
 :END:
 Algo que me impulsionou a ir um pouco mais a fundo nos fundamentos do machine
@@ -1032,6 +1034,145 @@ Acho que até mesmo descobri sobre o que farei meu TCC: Algoritmos Genéticos. (
 Bom, o trabalho é grande e o tempo é curto, mãos à obra!
 
 Link do curso aos interessados: https://www.coursera.org/learn/machine-learning
+
+
+** DONE Diferença entre permuta, combinação e arranjo
+:PROPERTIES:
+:EXPORT_FILE_NAME: diferenca-entre-permuta-combinacao-e-arranjo
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "post/8/diferenca-entre-permuta-combinacao-e-arranjo"
+:EXPORT_DATE: <2018-02-09 Fri> 
+:END:
+
+Sempre tive dificuldade de diferenciar estes três, então vou tentar
+explicar da forma mais visual possível.
+
+Isso é muito útil principalmente quando você está estudando
+probabilidades, e se você for como eu, que confunde entre um e outro,
+definitivamente será útil.
+
+
+*** Permuta
+
+A permuta é utilizada para quando você quiser contar de quantos jeitos
+diferentes pode-se organizar um número de elementos. Acredito que o
+exemplo mais fácil da permuta são os anagramas. Pra quem não se
+lembra, anagramas é o "jogo" de palavras que você faz, trocando as
+letras de uma palavra de lugar, a fim de formar outra palavra.
+
+Imagine a palavra SOL. São três letras. Vamos ver todas as
+possibilidades.
+
+#+begin_example
+SOL
+SLO
+LOS
+LSO
+OSL
+OLS
+#+end_example
+
+Fórmula da Permuta: \(C = {n!}, \text{n = número de elementos}\)
+
+Seguindo o exemplo da palavra SOL, a fórmula aplicada seria a
+seguinte:
+
+\[C = {3!} = 6 \text{ possibilidades.}\]
+
+Outro exemplo seriam 15 carros em uma corrida, quais seriam todas as
+possíveis combinações de posições de chegada de todos os pilotos?
+Agora que temos a fórmula fica muito fácil. Vejamos:
+
+\[C = {15!} = \text{1 trilhão 307 bilhões 674 milhões e 368 mil possibilidades.}\]
+
+Wow!
+
+*** Arranjo
+
+Agora, voltando ao exemplo dos anagramas, imagine que nós desejamos
+que as letras não possam assumir a mesma posição mais de uma vez. É um
+pouco diferente da fórmula da permuta, onde agora vamos dividir o
+resultado das combinações dos nossos elementos, com a nosso desejo de
+que agora a ordem dos elementos tenham importância.
+
+Fórmula do Arranjo:
+
+\[C = {n! \over (n-p)!}\], onde \( n = \text{número total de elementos}, p = \text{restrição}\)
+
+Vamos seguir com o exemplo da palavra SOL, e após com a palavra
+NOME. Desejamos agora que as letras NÃO repitam posições. Temos:
+
+\[C = {3! \over (3-1)!} = 3\text{ arranjos.}\]
+
+número total de elementos: 3;
+posições que cada elemento pode ocupar: 1
+
+#+begin_example
+SOL
+LSO
+OLS
+#+end_example
+
+E agora com NOME:
+
+\(C = {4! \over (4-1)!} = 4\text{ arranjos.}\)
+
+número total de elementos: 4;
+posições que cada elemento pode ocupar: 1
+
+#+BEGIN_SRC latex
+NOME
+ONEM
+MENO
+EMON
+#+END_SRC
+
+Outro exemplo. Você pode também imaginar que temos o pódio de uma
+competição, onde existem 30 judocas, mas somente são distribuídas três
+medalhas, quais são todas as possibilidades de pódium possíveis?
+
+\[C = {30! \over (30-3)! } = 24360 \text{ possibilidades.}\]
+
+Resumindo: no arranjo a ordem importa!
+
+*** Combinação
+
+Agora que você já está sacando o arranjo, na combinação existe uma
+sacada: a posição não importa! Porque na combinação João e Carlos, ou
+Carlos e João são a mesma coisa!
+
+Imagine agora que você está dentro um filme de terror, e junto de você
+estão mais outras 3 pessoas e vocês precisam se separar em 2 grupos!
+(Porque em todo filme de terror, as pessoas sempre se separam).
+
+A fórmula é padrão é a seguinte:
+
+\[C = {n! \over p! * (n-p)!}\]
+
+onde: n = números total de elementos
+p = restrição
+
+Agora vamos aplicá-la no nosso problema:
+
+\[C = {4! \over 2! * (4-2)!} = 6 \text{ grupos diferentes.}\]
+
+\[n = 4\] sobreviventes
+
+\[p = 2\text{ pessoas por grupo}\]
+
+Vamos verificar se são 6 grupos mesmo??
+
+Total de pessoas: João, Maria, Carlos, Eu
+
+: | Eu e João     | Maria e Carlos |
+: | Eu e Maria    | João e Carlos  |
+: | Eu e Carlos   | João e Maria   |
+
+Yes! Exatamente 6 grupos diferentes. Se você tentasse efetuar esse
+cálculo utilizando o "jeito" do arranjo, notaria que ele cria o dobro
+de grupos, isso porque pro arranjo, o grupo Eu e João, e João e Eu são
+diferentes!
+
+Por isso que importante saber qual fórmula utilizar para situações diferentes.
 
 
 ** DONE Comandos que você precisa conhecer no linux
@@ -1442,7 +1583,7 @@ postar um comentário abaixo.
 ** TODO Cider shadow-cljs sane defaults
 :PROPERTIES:
 :EXPORT_FILE_NAME: cider-for-both-server-and-shadow-cljs
-:EXPORT_DATE: <2024-02-20 Tue> 
+:EXPORT_DATE: <2024-02-20 Tue>
 :END:
 
 #+BEGIN_SRC lisp-data
