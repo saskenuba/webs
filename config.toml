@@ -1,0 +1,82 @@
+baseURL = ""
+languageCode = "pt"
+defaultContentLanguage = "pt-br"
+title = "Martin Mariano | Thoughts"
+preserveTaxonomyNames = true
+enableRobotsTXT = true
+enableEmoji = true
+enableGitInfo = false
+
+paginate = 5
+googleAnalytics = ""
+copyright = ""
+
+#pygmentsOptions = "linenos=table"
+#pygmentsCodefences = true
+#pygmentsUseClasses = true
+#pygmentsCodefencesGuessSyntax = true
+
+[sitemap]
+  changefreq = "weekly"
+  priority = 0.5
+  filename = "sitemap.xml"
+
+[params]
+  since = "2017"
+  gitRepo = ""
+  author = "Martin Mariano"
+
+  # site info (optional)
+  logoTitle = "Martin"        # default: the title value
+  keywords = ["Martin Mariano", "Brazil", "developer"]
+  description = "Martin Mariano developer blog"
+
+  # paginate of archives, tags and categories
+  archivePaginate = 50
+
+  # show 'xx Posts In Total' in archive page ?
+  showArchiveCount = false
+
+  # The date format to use; for a list of valid formats, see https://gohugo.io/functions/format/
+  dateFormatToUse = "2006-01-02"
+
+  # show word count and read time ?
+  moreMeta = false
+
+  # Some global options, you can also close or open something in front matter for a single post, see more information from `archetypes/default.md`.
+  toc = true
+  autoCollapseToc = false
+  googleVerification = ""
+
+  # Display a message at the beginning of an article to warn the readers that it's content may be outdated.
+  [params.outdatedInfoWarning]
+    enable = false
+    hint = 30
+    warn = 180
+
+  [params.social]
+    email = "mailto:contato@martinmariano.com"
+    github = "https://github.com/saskenuba"
+    linkedin = "https://www.linkedin.com/in/martinmariano"
+
+# See https://gohugo.io/about/hugo-and-gdpr/
+[privacy]
+  [privacy.googleAnalytics]
+    anonymizeIP = true
+
+[markup.highlight]
+anchorLineNos = false
+codeFences = true
+hl_Lines = ''
+hl_inline = false
+lineAnchors = ''
+lineNoStart = 1
+lineNos = false
+lineNumbersInTable = false
+style = 'modus-operandi'
+tabWidth = 4
+
+[markup.tableOfContents]
+  startLevel = 1
+[markup.goldmark.renderer]
+  unsafe = true

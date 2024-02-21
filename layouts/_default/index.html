@@ -1,0 +1,15 @@
+{{ define "main" }}
+
+{{ range  where .Site.RegularPages "Section" "post" }}
+<div class="entry-overview">
+    <span class="date">{{ time.Format "January 2, 2006" .Date }}</span>
+
+    {{ $description := .Params.description }}
+    <div class="detail">
+        <h1><a href="{{ .RelPermalink }}">{{ .Title }}</a></h1>
+        <span>{{ $description | default .Content | safeHTML | truncate 100 }}</span>
+    </div>
+</div>
+{{ end }}
+
+{{ end }}

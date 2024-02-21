@@ -1,0 +1,1462 @@
+#+HUGO_AUTO_SET_LASTMOD: t
+#+HUGO_BASE_DIR: .
+#+HUGO_SECTION: ./post/
+#+HUGO_WEIGHT: auto
+
+* General
+
+** DONE O caminho da Startup             :rust:clojurescript:startup:empresa:
+:PROPERTIES:
+:EXPORT_FILE_NAME: o-caminho-da-startup
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/16"
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER+: :description "Devaneios de querer ser dono de empresa."
+:EXPORT_DATE: 2022-11-12
+:END:
+Está aqui. Finalmente chegou o momento, depois de tanta espera, angústia,
+alegrias e descobrimentos. A minha empresa (ou startup né, já que está na moda)
+está online! De CNPJ e tudo, vai encarar?
+
+A MercadoSkin é uma marketplace C2C (customer to customer) de skins para Counter
+Strike GO. Quem deseja vender realiza o cadastro, sobe o item que deseja vender
+e recebe o dinheiro direto no banco ou carteira virtual. Para quem deseja
+comprar, os itens estão mais baratos que no mercado tradicional da Steam além de
+oferecermos várias opções de pagamento como o poder de parcelar em 4x sem juros
+(em processo de integração) e PIX.
+
+Não começou exatamente como um projeto de empresa, mas ao longo do tempo acabou
+se tornando. Aqui descrevo a jornada do herói, vulgo empreendedor de baixa
+renda, aquele que não tem um puto para colocar do bolso. Triste mas é a pura
+realidade. Vou descrever todo o tech da loja, colocando hiperlinks para
+facilitar a navegação, e também descrever algumas nuances que enfrentei como
+dono e desenvolvedor.
+
+*** Tech stack
+
+Muita tecnologia e várias apostas também. Contei com um pouco de sorte nestes
+últimos um ano e meio e tudo que utilizei no projeto amadureceu bem. As seções a
+seguir possuem bastantes jargões da área de TI, mas não se assuste! Prometo que
+vai ficar tudo bem.
+
+**** Backend em Rust
+
+Como eu havia dito na introdução, no início do projeto, ainda não sabia se esses
+estudos iriam para lugar algum, ou ainda que concretizariam-se em algo; apenas
+estava com a ideia de portar várias bibliotecas de código aberto em C# e Node.js
+para Rust, a fim justamente de aprender a linguagem.
+
+Então, Rust foi meio que uma aposta, e que felizmente me surpreendeu muito com
+as facilidades que ela me ofereceu até hoje. Há um ano e meio atrás, nunca havia
+trabalhado com linguagens tipadas e agora não consigo voltar atrás. Além da
+tipagem em si, Rust possui o famigerado borrow checker, sistema que realiza
+controle dos tempos de vida das referências de variáveis, evitando uma série de
+problemas, como double frees, e racing conditions no caso de multi-threading.
+
+Não entrarei em muitos detalhes sobre a ergonomia da linguagem já que não é o
+ponto do post, mas recomendo a todos experimentarem. Quando necessário realizar
+algum tipo de refactor, o compilador te guia com as mensagens de erro. Coisa
+divina.
+
+**** Frontend com ClojureScript
+
+Seguindo o mesmo racional de Rust, comecei a escrever o frontend na linguagem
+CLJS (ClojureScript). Ela é basicamente Clojure, mesma sintaxe, com a diferença
+que ela "transpila" (converte) seu código para Javascript otimizado através do
+compilador Google Closure.
+
+Escrevo o frontend com as bibliotecas Reagent (de grosso modo um wrapper de
+React), e re-frame, este que preencheria o espaço de um banco de dados, com uma
+lógica reativa muito bacana onde através de uma função, fica esperando por
+mudanças de uma variável, e ao acontecer re-renderiza somente aquela seção que
+possui a variável.
+
+Ao longo do tempo, ouvia dizer que programação funcional mudaria o modo de como
+o programador pensa, devido a mudança total do paradigma imperativo (python, js)
+para o funcional. Com funções sem side effects (funções puras), funções que
+recebem outras funções como parâmetros etc. Então resolvi mergulhar em Clojure e
+já lhes digo, que jornada!
+
+No início foi difícil me acostumar. Antes do projeto já havia testado Haskell só
+por brincadeira, então já tinha uma certa noção de como funcionava, mas Haskell
+por si só é uma linguagem pura que não permite mutabilidade. No caso, Clojure
+até permite, mas não é incentivado. Em suma, é outro jeito de escrever código e
+ajuda demais utilizar esses pilares da programação funcional ao voltar em outras
+linguagens, em especial ao evitar bugs de mutabilidade.
+
+**** Infraestrutura
+
+Um processo que realmente brilha dentro na MercadoSkin, é o continuous
+deployment e delivery. Com o Github Actions, assim que existe um commit novo
+dentro da branch principal, ele realiza o teste, e após todos passarem com
+sucesso, um processo adjacente executa um cross-compilation para a arquitetura
+MUSL.
+
+Compilando para MUSL, você permite que o projeto rode sem absolutamente nenhuma
+dependência do ambiente que vai rodar. Isso significa que você não precisa da
+libc, openssl, ou qualquer outra biblioteca, já que está tudo incluído
+estaticamente no executável do servidor. O container fica com apenas 25mb. É
+para chorar de alegria.
+
+Então logo depois testar, ele compila para linux MUSL, e lança o projeto no AWS
+ECR, que é o container registry da AWS, que fica de graça no free tier.
+Contratei um servidor bem baratinho no cloud hosting da Hetzner, por
+aproximadamente 3.99 euros por mês, e possui 2GB de RAM e 2 vCPU. E utilizo um
+serviço chamado CapRover para realizar o deploy/orquestração deste container,
+além dos outros, como Redis e de outros processos.
+
+Ou seja, depois de 1h, que é mais ou menos o tempo que demora para tudo ser
+testado e compilado, o commit estará live automaticamente. Viva a tecnologia meu
+garoto!
+
+Além do container do site, criei uma função AWS Lambda rodando em Python, dentro
+de um container. Ela é responsável por todos os processos de scraping que a
+MercadoSkin realiza. Eu não sei o que posso compartilhar, mas são váááários
+processos, hehe.
+
+O interessante sobre as funções Lambda, é que a Amazon é muito generosa quanto
+ao tempo de processamento que ela pode rodar, com a condição que não exija-se
+demais — no sentido de precisar muito de CPU, que custam mais caro. Permitindo
+que todo o scraping rode na faixa. Sim, grátis, for free. Obrigado tio Bezos!
+
+Além das funções Lambda AWS, também utilizamos o S3 para storage dos perfis da
+Steam e os resultados do scraping, e AWS ECR para guardar o container com o
+código do site.
+
+Uma coisa que descobri durante o desenvolvimento da infraestrutura, é a
+possiblidade de “descrever a infraestrutura” em código, utilizando a linguagem
+Terraform. Se você não conhece, você basicamente pega a sua chave de API das
+plataformas de infraestrutura, tipo Cloudflare, Hetzner, AWS; e escreve em
+código mesmo as funcionalidades. Assim você sempre possuirá o mesmo “ambiente”
+só rodando o script Terraform. Muito louco!
+
+**** E-mails transacionais
+
+Com o SendGrid, enviamos todos os e-mails transacionais de maneira muito
+simplificada. Basta criar os modelos de designs dos e-mails, com as variáveis
+que serão substituídas por seus valores mais tarde. Então na hora de chamar a
+API de envio de e-mail, você coloca o nome da variável e seu valor concreto.
+Assim o SendGrid realiza a substituição antes do envio. Muito prático.
+
+Você também consegue utilizar sua chave de API para enviar e-mails por SMTP.
+Assim você consegue enviar e-mails a partir de uma caixa convencional, tipo
+GMAIL, sem a necessidade de ter que pagar por uma caixa única. Hoje eu recebo
+todos meus e-mails via Cloudflare por redirecionamento, e envio através do meu
+Gmail com o auxílio do SendGrid, sem gastar um real!!! Caminho das Pedras
+
+Adoro a expressão de passar pelo caminho das pedras, um grande abraço ao meu
+ex-chefe Renato! Mas digo de antemão: use no mínimo um chinelo, porque o caminho
+das pedras machuca e não é pouco.
+
+**** Escolhendo um gateway de pagamento em 2022
+
+Uma das etapas mais engessadas até agora, foi a parte da integração de cartão de
+crédito. São muitos os possíveis parceiros, SafraPay, MercadoPago, Pagar.me,
+Yapay, PayPal entre vários outros que oferecem ou somente a maquininha, ou
+alguma outra coisa.
+
+Como meu backend foi desenvolvido em Rust, e minha plataforma é proprietária,
+tenho que realizar a integração manualmente ☹. Mas tranquilo, somos
+verdadeiramente guerreiros dos teclados, então nada tememos desde que a
+documentação esteja bem especificada. Segue o relato:
+
+*SafraPay*: O SafraPay foi a maior decepção até agora. Entrei no site e pimba,
+ótimas taxas, bem explicativo, possui suporte para Checkout Transparente, até
+então tudo perfeito! Até chegar a hora do credenciamento. Um atendente pior que
+o outro, ninguém conhece o produto, ninguém conhece o Checkout Transparente que
+está sendo anunciado no site. Um deles até chegou a me perguntar o que era API
+de pagamentos. Poxa, como vou saber se eles que vendem os serviços? Achei
+engraçado, e depois de alguns segundos, trágico. Abri reclamação no ReclameAqui,
+recebi ligações, mensagens, e depois de uma semana descobri que o checkout
+transparente foi descontinuado. Bora para o próximo!
+
+*MercadoPago*: API mais ou menos documentada. Mas todas as taxas de todas as
+modalidades de recebimento são maiores de que qualquer outro concorrente. Será
+que são tão populares ao ponto de colocarem as taxas que quiserem? Próximo.
+
+*PayPal*: Sempre ouvi dizer que ficam muito do lado do cliente em uma possível
+disputa. Isso é arriscado já que meus produtos são totalmente digitais; uma vez
+que transferi o item, já era. Então decidi procurar por outro parceiro de
+recebimentos.
+
+*GalaxPay*: Cobra mensalidade que pode ser absorvida em transações, e também setup
+de 300 reais. É preciso credenciar para obter-se as taxas cobradas no cartão.
+Pedi uma pré cotação das taxas, mas não me mandaram. Pelo valor total cobrado,
+acho improvável de me oferecerem algo mais vantajoso que os concorrentes. Em
+compensação, foi o único que me prestou um atendimento realmente personalizado.
+Me ligaram, marcaram uma reunião no Meets; valorizo muito isso, props!
+
+*Pagar.me*: Pior contato comercial existente. Três dias aguardando para cada
+e-mail para tirar dúvidas, e o comercial responde, sem as dúvidas. Taxas tão
+caras quanto MercadoLivre. Não compensa.
+
+*Stripe*: API excelente, texto e taxas claras como as fontes termais nipônicas,
+mas infelizmente não possui parcelamento, mas este está para entrar no Q2
+de 2022. Agora não rola, mas ficamos de olho!!
+
+*eRede e Cielo*: Possuem taxas boas, mas a eRede só permite antecipação depois
+de 1 ano, e a Cielo não é transparente quanto sua antecipação (taxas cobradas
+etc.). E em ambas você só recebe junto com as parcelas do cliente. Não tem como,
+já que não tenho capital de giro.
+
+*Yapay*: API mais ou menos documentada com taxas atraentes. Entrei em contato com
+o atendimento, este que sempre respondeu rapidamente. As melhores taxas
+negociadas até o momento. Tive que fechar com eles!
+
+*** Fechamento
+
+É realmente uma loucura ter que lidar com tudo sozinho. Você precisa desenvolver
+o produto (software), analisar seus parceiros de recebimentos, lidar com
+questões administrativas da empresa, marketing em mídia social onde é necessário
+criar fotos e vídeos de maneira que alcance seu público. E gostaria muito de
+dizer que vai dar certo, mas no momento é uma incerteza muito grande. Desenvolvi
+o projeto pensando muito no SEO (Search Engine Optimization) e estou apostando
+minhas fichas no Google fazendo um bom trabalho.
+
+Acredito que esse post resume todo o processo, desde o início até onde estou
+agora. Tenho diversas ideias para implementar e continuar, mas infelizmente o
+orçamento está curto. Veja bem, é muito mais prático e fácil trabalhar para os
+outros, principalmente nesse inicio. Adivinhe meu faturamento desde janeiro?
+Precisos R$5,00. Sim. Tudo isso.
+
+Mas digo com toda a convicção do mundo, se não fosse por este projeto, não seria
+um terço do desenvolvedor que sou hoje. Aprendi todos os processos de
+desenvolvimento de software possíveis e que possam ser descritos. Ajudei com
+bibliotecas de código-aberto que são essenciais para o funcionamento da loja,
+criei várias bibliotecas também. Dê uma olhada no meu Github e quem sabe você
+não acha algo interessante. Aqui seguem algumas direto do Github:
+
+- SteamHelpers-rs - Conjunto de crates(bibliotecas em Rust) para se comunicar com a Steam;
+- PixToolbelt - Conjunto de utilidades para se comunicar com PSP (bancos, fintechs) através da especificação do PIX. Inclui cliente para chamadas API, gerador de QRCodes, parser de BRCode, entre outros;
+- Yapay-SDK-Rust - SDK não oficial da Yapay em Rust, fortemente tipado para realizar chamadas na API.
+
+O Blog da MercadoSkin também possui artigos interessantes, que apesar de quase
+não ter nada neste momento, planejo anúnciar todas as informações da empresa por
+lá. Supertope!
+
+E mais, sigo inabalável por pelo menos até o fim de 2022. O produto está ali,
+sólido, rápido e sem clientes. Agora minha ideia é focar no marketing para
+alcançar o público. Me desejem sorte!
+
+
+** DONE Carregando dados de treino no PyTorch                :python:pytorch:
+:PROPERTIES:
+:EXPORT_FILE_NAME: carregando-dados-de-treino-no-pytorch
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/15"
+:EXPORT_DATE: 2019-08-08
+:END:
+O framework Pytorch tem um jeito muito simples de você carregar os dados para
+criar sets de treinamento, desenvolvimento e teste através de classes que
+fornecem abstrações. O objetivo delas é fornecer uma maneira genérica de
+carregar datasets de QUALQUER tipo, pois cabe ao programador decidir como são
+carregadas. Podem ser imagens, arquivos de áudio e qualquer outro tipo.
+
+Estas classes são Dataset e Dataloader, disponibilizadas pela biblioteca
+*torch.utils.data*, onde conseguimos extender sua funcionalidade para que atue
+exatamente do modo como precisamos.
+
+Para este tutorial é suposto que você tenha alguns arquivos organizados para
+serem utilizados para o treinamento. Note que não é necessário entender muito
+sobre orientação a objeto em Python, mas ajuda um pouco.
+
+Você pode tanto seguir os passos dentro de um ambiente Jupyter Notebook, ou em
+uma IDE, fica a seu critério. Eu pessoalmente sugiro que faça pelo notebook,
+pois é bem tranquilo de ficar reiniciando os processos e tudo mais.
+
+Para todo o conteúdo desta postagem, vamos utilizar as seguintes importações:
+
+#+begin_src python
+import pandas as pd # interpretação de arquivos .csv e .xls
+import numpy as np
+import torch
+import librosa # responsável por transformar árquivos de áudio em vetores numpy
+import cv2 # carregar imagens em vetores numpy
+from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
+#+end_src
+
+E a seguinte estrutura de pastas:
+
+#+begin_example
+.
+└── Projeto
+    ├── main.py
+    └── dataset
+        ├── training.csv
+        └── arquivos
+            ├── imagem3.jpg
+            ├── imagem2.jpg
+            └── imagem1.jpg
+#+end_example
+
+O arquivo *training.csv* contêm o caminho relativo da imagem, e sua etiqueta
+separada por vírgula. Primeira linha consiste no título das colunas.
+
+#+begin_example
+caminho,etiqueta
+arquivos/imagem1.jpg,gato
+arquivos/imagem2.jpg,não-gato
+arquivos/imagem3.jpg,gato
+#+end_example
+
+*** Utilizando a classe Dataset
+
+O primeiro passo é criar uma classe que herdará a classe abstrata *Dataset*.
+Vamos olhar para o esqueleto de nossa classe MeuDataset.
+
+#+begin_src python
+class MeuDataset(Dataset):
+    '''Classe que representa nosso dataset. Deve herdar da classe Dataset, em torch.utils.data
+    '''
+
+    def __init__(self, caminho_raiz):
+        '''Define os valores iniciais.'''
+        self.caminho_raiz = caminho_raiz
+
+    def __len__(self):
+        '''Número total de amostras'''
+        return NotImplemented
+
+    def __getitem__(self, indice):
+        '''Retorna o item de número determinado pelo indice'''
+        return NotImplemented
+#+end_src
+
+Para utilizar a classe Dataset do Pytorch, precisamos implementar as três
+funções, ~__init__~, ~__len__~ e ~__getitem__~.
+
+~__init__~: Representa o nosso construtor. Quando a classe for iniciada,
+atribuíremos alguns valores aos atributos, como por exemplo, o caminho da pasta
+onde estão localizado os arquivos.
+
+~__len__~: Responsável por retornar o tamanho total do dataset quando chamamos
+len(dataset).
+
+~__getitem__~: Retorna o item escolhido através do índice. Quando chamemos
+dataset[0] irá retornar o primeiro item do dataset.
+
+Vamos começar por específicar a localização do nosso arquivo .csv, que contém o
+caminho do arquivo e sua etiqueta, e após isso vamos carregá-lo utilizando a
+biblioteca pandas.
+
+#+begin_src python
+class MeuDataset(Dataset):
+    '''Classe que representa nosso dataset. Deve herdar da classe Dataset, em torch.utils.data'''
+
+    def __init__(self, pasta_raiz, nome_csv):
+        '''Define os valores iniciais.
+
+        Parâmetros:
+            pasta_raiz: string contendo a pasta raiz do dataset (caminho relativo)
+            nome_csv:  string contendo o nome do arquivo .csv
+        '''
+        self.pasta_raiz = pasta_raiz
+        self.dados_csv = pd.read_csv(pasta_raiz + nome_csv, delimiter=",")
+
+    def __len__(self):
+        '''Número total de amostras'''
+        return self.dados_csv.shape[0]
+
+    def __getitem__(self, indice):
+        '''Retorna o item de número determinado pelo indice'''
+        return NotImplemented
+#+end_src
+
+E testamos para ver se funcionou:
+
+#+begin_src shell
+dataset = MeuDataset("./dataset/", "training.csv")
+dataset_size = len(dataset)
+>> 3
+#+end_src
+
+Perfeito, tudo funcionou como esperado. Agora o próximo passo é implementar a
+função para selecionar um arquivo através de um índice.
+
+Criamos agora duas novas variáveis que são calculadas após os dados csv serem
+carregados. Uma será para conter o caminho dos arquivos, e outra para conter as
+etiquetas.
+
+#+begin_src python
+class MeuDataset(Dataset):
+    '''Classe que representa nosso dataset. Deve herdar da classe Dataset, em torch.utils.data'''
+
+    def __init__(self, pasta_raiz, nome_csv):
+        '''Define os valores iniciais.
+
+        Parâmetros:
+            pasta_raiz: string contendo a pasta raiz do dataset (caminho relativo)
+            nome_csv:  string contendo o nome do arquivo .csv
+        '''
+        self.pasta_raiz = pasta_raiz
+        self.dados_csv = pd.read_csv(self.pasta_raiz + nome_csv, delimiter=",")
+        self.dados_caminhos = self.dados_csv.iloc[:, 0]
+        self.dados_etiquetas = self.dados_csv.iloc[:, 1]
+
+    def __len__(self):
+        '''Número total de amostras'''
+        return self.dados_csv.shape[0]
+
+    def __getitem__(self, indice):
+        '''Retorna o item de número determinado pelo indice'''
+        x = cv2.imread(self.pasta_raiz + self.dados_caminhos[indice])
+        y = self.dados_etiquetas[indice]
+
+        return x, y
+#+end_src
+
+Com isso, ao rodar dataset[0] você receberá uma tupla, onde o primeiro elemento
+é uma matriz numpy, e o segundo elemento será a etiqueta deste arquivo.
+
+#+begin_example
+dataset = MeuDataset("./dataset/", "training.csv")
+dataset[0]
+>>>
+(array([[[ 94,  26,   0],
+         [ 93,  25,   0],
+         [ 96,  24,   0],
+         ...,]], 'gato')
+#+end_example
+
+Essa facilidade com que podemos criar e explorar os dados é um dos atrativos que
+faz PyTorch ser muito bacana de trabalhar. Além disso, é possível realizar
+transformações com os dados no momento em que se carrega o arquivo com as
+*transformações*. É possível transformar o arquivo diretamente em um tensor,
+croppar, reescalonar e normalizar bastando criar classes de transformações. Como
+bônus estarei demonstrando na última seção deste tutorial.
+
+Beleza, agora que temos o dataset pronto para se trabalhar, como podemos
+dividí-lo em lotes de 32, 64. Ou ainda separar em lotes de treinamento e teste?
+Calma meu jovem padawan, vou explicar todo o processo na próxima seção, onde
+conversaremos sobre *DataLoaders*.
+
+
+** DONE Financial Aid (Ajuda de Custo) em cursos onlines
+:PROPERTIES:
+:EXPORT_FILE_NAME: financial-aid-ajuda-de-custo-em-cursos-onlines
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/14"
+:EXPORT_DATE: 2019-06-22
+:END:
+Na internet existe muito material de qualidade, mas é muito difícil encontra-los
+consolidados de forma que basta estudar e não ficar procurando muita coisa
+adicional.
+
+Esses são os MOOCs (Massive Open Online Courses), também conhecidos como
+cursinhos online - há, pensou que eu ia traduzir o acrônimo não é?
+
+Se você, como eu, tem muita gana de aprender, mas infelizmente está na época das
+vacas magras, existe, agora felizmente, uma solução para nós! O Financial Aid,
+ou ajuda de custo/bolsa de estudos, banca o determinado curso pra você de
+maneira gratuita, e garantindo um prazo generoso de geralmente 180 dias para
+completar o curso.
+
+Logo abaixo vou colocar alguns textos que escrevi para solicitar a ajuda de
+custo. Tanto no site da Cursera qunato a edX, possuem a seção para solicitar, e
+têm excelentes cursos das mais diversas áreas disponibilizados por ótimas
+instituições, vide CS50 de Harvard ou Machine Learning da univerdade de
+Stanford.
+
+Note que explicitamente a solicitação deve ser sincera e não simplesmente para
+economizar uns trocados uma vez que os cursos são relativamente baratos pela
+qualidade que possuem. Com 120 reais por exemplo, você consegue tirar a
+certificação CS50 disponibilizada pela uni de Harvard. Imagine só pagar por algo
+similar presencial? Minha carteira até doeu.
+
+Sem mais delongas seguem os textos, lembrando que não basta copiar e colar, são
+de caráter pessoal e devem representar sua situação atual, fora que são
+avaliados por *pessoas*.
+
+*** Curso de Machine Learning – Stanford University na plataforma Cursera
+
+**** Why are you applying for Financial Aid? (150 words minimum required)
+
+Currently I am a student in Brazil taking Computer Science classes at a private
+university. Now I have no job to be able to afford the expenses of new courses
+since all the money I have saved in my two years job working as a phone
+technical support is now being used to pay for my university fees.
+
+The minimum wage here is about 313$ dollars, my university costs 200$ and going
+up each semester, so I cannot pay for the certificate if I sum up all my needs
+like food and rent. I get some help from my family but sometimes is not enough.
+We have a job crisis here in Brazil, so almost all jobs have very low pay, and
+if I take it, I risk not being able to study, which is my priority.
+
+With financial aid, I would be able to complete the course without impact in my
+savings so my studies can continue.
+
+**** How will taking this course help you achieve your career goals? (150 words minimum required)
+
+I want to work with is artificial intelligence and machine learning because it
+is the job of the future.
+
+
+After a lot of research, this is the best course I found and everyone that I see
+whom works or study with machine learning advises to enroll in it. Currently I
+am at week five, studying hard to be able to keep up with the deadlines. For my
+BS in Computer Science, my thesis work will be related to machine learning, and
+this course will help me a lot to achieve my dream job and complete my
+graduation.
+
+After completing this course, I plan to pursue other courses, like deep learning
+and genetic algorithms. Moreover, when I complete my bachelors, I plan to apply
+to a master’s degree in another country. In addition, the verified certificate
+increases my credibility on the subject, further prospecting my chances of
+getting a good internship.
+
+*** Deep Learning Specialization - Curso 1 - deeplearning.ai
+
+**** Why are you applying for Financial Aid? (150 words minimum required)
+
+Currently I am a student in Brazil taking Computer Science classes at a private
+university. Since my last financial aid application, I have managed to study a
+lot on machine learning, but I still got no job and I can not pay for this
+specialization now.
+
+All the money I managed to save on my previous job is almost gone so I’m
+dependent on my parents to continue paying for my university and living fees.
+Getting a part-time job here in Brazil is very difficult, we are almost
+recovering from the financial crisis but is very difficult even getting to an
+interview.
+
+Since I am now at half completion of my degree the prospects of getting an
+internship this year is great, but I can’t afford to stop studying. With the
+financial aid, I would be able to complete the course and it will be a big
+addition to my resume so I can get my dream internship.
+
+**** How will taking this course help you achieve your career goals? (150 words minimum required)
+
+My biggest dream is to get a job within artificial intelligence and machine
+learning in a big company. So, I’ve spent more than a year by now, studying hard
+to get to it.
+
+Studying is important to me, and I plan to continue doing it more and more and
+then share it all back to those in the same situation as me.
+
+I have finished the base machine learning course by Andrew NG with financial
+aid, and now I am looking forward to the Deep Learning specialization, where I
+will learn a lot more on neural networks and I will continue to write my thesis
+on genetic algorithms all thanks to the free online courses available on the
+internet.
+
+This course along with the machine learning course will help me greatly
+achieving my dream data science career, and after my degree in computer science
+is completed, I will pursue my master’s degree abroad.
+
+
+
+** DONE Nós realmente deveríamos valorizar os pensadores
+:PROPERTIES:
+:EXPORT_FILE_NAME: nos-realmente-deveriamos-valorizar-os-pensadores
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/13"
+:EXPORT_DATE: 2019-06-21
+:END:
+O texto a seguir foi traduzido de
+https://slatestarcodex.com/2019/02/26/rule-genius-in-not-out/ com mínimas
+correções de expressões que não faziam muito sentido traduzidas ao pé da letra.
+
+Imagine uma caixa preta que, quando você pressiona um botão, gera uma hipótese
+científica. 50% das suas hipóteses são falsas; 50% são verdadeiras hipóteses
+divisoras de águas e elegantes como relatividade. Mesmo com a taxa de erro, é
+fácil ver que essa caixa ultrapassaria rapidamente as cápsulas espaciais, as
+pinturas de Da Vinci e os cartuchos de tinta de impressora para se tornar o
+objeto mais valioso do mundo. Progresso científico sob demanda, e tudo o que
+você precisa fazer é testar algumas coisas para ver se é verdade? Não quero
+desvalorizar os experimentalistas. Eles fazem um ótimo trabalho. Mas é
+apropriado que Einstein seja mais famoso que Eddington. Se você tirasse
+Eddington, alguém mais teria testado a relatividade; o gargalo está em
+Einsteins. Um Einstein dentro de uma caixa, ao custo de dois Eddingtons por
+insight é um negócio da china.
+
+E se a caixa tivesse apenas uma taxa de sucesso de 10%? Uma taxa de sucesso de
+1%? Meu palpite ainda é que seria o objeto mais valioso do mundo. Mesmo uma taxa
+de sucesso de 0,1% parece muito bom, considerando todo o benefício (e se nos
+perguntássemos se a caixa possui a cura do câncer, e então testássemos em ratos
+de laboratórios e voluntários?) Você tem que ir muito baixo antes que a caixa
+pare de ser grandiosa.
+
+Eu pensei sobre isso depois de ler esta lista de gênios com ideias terríveis.
+Linus Pauling pensava que a vitamina C curava tudo. Isaac Newton passou metade
+do seu tempo trabalhando em códigos bíblicos estranhos. Nikola Tesla perseguiu
+raios de energia loucos que não podiam funcionar. Lynn Margulis revolucionou a
+biologia celular ao descobrir a endosimitização mitocondrial, mas também
+duvidava de 11 de setembro além de duvidar que o HIV causasse AIDS. E por aí em
+diante.
+
+Obviamente isto deveria acontecer. Gênio muitas vezes envolve vir com uma ideia
+ultrajante contrária à sabedoria convencional e persegui-la obsessivamente
+apesar dos opositores. Mas ninguém pode ter uma taxa de sucesso de 100%. As
+pessoas que fazem isto com sucesso, por vezes, também devem falhar, só porque
+são o tipo de pessoa que o tenta fazer. Nem todos falham. Einstein parece ter
+batido um perfeito 1000 (a menos que você conte seu apoio ao socialismo). Mas o
+fracasso não deve nos surpreender.
+
+No entanto, alguns desses exemplos não são imperdoavelmente ruins? Como por
+exemplo, sério Isaac - códigos bíblicos? Bem, com certeza, os experimentos
+químicos de Newton podem tê-lo exposto a um pouco mais de mercúrio do que pode
+ser inteiramente saudável. Mas lembre-se: a gravidade era considerada uma
+pseudociência oculta assustadora pelos seus primeiros inimigos. Sujeitou a terra
+e os céus à mesma lei, que chocou as sensibilidades do século XVII da mesma
+forma que hoje em dia tentava ligar consciência e matéria. Ele postulava que os
+objetos podiam agir uns sobre os outros através de forças invisíveis a uma
+distância que estava igualmente fora da Janela de Overton contemporânea. Gênio
+excepcional de Newton, sua capacidade excepcional de pensar fora de todas as
+caixas relevantes, e seus erros excepcionalmente flagrantes são todos o mesmo
+fenômeno (mais ou menos um pouco de mercúrio).
+
+Ou pense nisso de uma maneira diferente. Newton olhou para os problemas que
+tinham irritado gerações antes dele, e notou um padrão sutil que todos os outros
+tinham perdido. Ele deve ser hipersensível detectando padrões incríveis que
+estão acontecendo. Mas as pessoas com essa tal hipersensibilidade devem ser mais
+propensas a ver padrões onde eles não existem. Daí os códigos bíblicos.
+
+Esses gênios são como nossas caixas pretas: geradores de ideias brilhantes, mas
+com uma certa taxa de fracasso. As falhas podem ser facilmente descartadas: os
+físicos foram capazes de assumir a gravidade de Newton sem perder tempo com seus
+códigos bíblicos. Então estamos certos em tratar os gênios como valiosos da
+mesma forma que trataríamos essas caixas como valiosas.
+
+Isso vale não apenas para gênios, mas para qualquer um na indústria de ideias.
+Criar uma ideia genuinamente original é uma habilidade rara, muito mais difícil
+do que julgar ideias. Alguém que vem acima com uma idéia original boa (mais
+noventa e nove ideias realmente estúpidas) é um melhor uso de seu tempo de
+leitura do que alguém que confiavelmente nunca começa qualquer coisa muito
+errada, mas nunca diz qualquer coisa que você encontra que seja nova ou
+surpreendente. Alyssa Vance esse efeito de seleção positiva - basta mandar bem
+uma única vez que você está dentro do jogo - em oposição à seleção negativa,
+onde mandar mal uma única vez o torna um marginal. Você deve praticar a seleção
+positiva para gênios e outros intelectuais.
+
+Eu penso sobre isso toda vez que eu ouço alguém dizer algo como "Eu perdi todo o
+respeito pelo Steven Pinker depois que ele disse todas essas coisas estúpidas
+sobre Inteligência Artificial". Seu problema foi pensar em "respeito" como um
+predicado relevante para aplicar a Steven Pinker em primeiro lugar. Ele é seu
+pai? Seu pastor de juventude? Não? Então por que você está se preocupando em
+"respeitá-lo" ou não? Steven Pinker é uma caixa preta que ocasionalmente cospe
+ideias, opiniões e argumentos para você avaliar. Se alguns deles são argumentos
+que você não teria inventado sozinho, então ele está fazendo um serviço para
+você. Se 50% deles são falsos, então o melhor cenário é que eles são moralmente,
+obviamente falsos, para que você possa rejeitá-los rapidamente e seguir em
+frente com sua vida.
+
+Não quero levar isto muito longe. Se alguém tem 99 ideias estúpidas e então 1
+aparentemente boa, obviamente isso deve aumentar sua probabilidade de que a
+aparentemente boa é realmente falha de uma maneira que você não tenha notado. Se
+alguém tem 99 ideias estúpidas, obviamente isso deve fazê-lo menos disposto a
+perder tempo lendo suas outras ideias para ver se elas são realmente boas. Se
+você quiser aprender o básico de um campo sobre o qual você não sabe nada,
+obviamente leia um livro didático. Se você não confia em sua capacidade de
+descobrir quando as pessoas estão erradas, obviamente leia alguém com um
+histórico de sempre representar a sabedoria convencional corretamente. E se você
+é um engenheiro social tentando recomendar o que outras pessoas que são menos
+inteligentes do que você deveria ler, obviamente afaste-os de alguém que está
+errado com muita frequência. Eu apenas me preocupo que muitas pessoas usam seu
+chapéu de engenheiro social tantas vezes que esquecem como tirá-lo, esquecem que
+"exploração intelectual" é um trabalho diferente do que "promover as opiniões
+certas sobre as coisas" e requer estratégias diferentes.
+
+Mas considere o debate sobre "cultura de ultraje". A maior parte disso se
+concentra no ultraje moral. Alguma pessoa inteligente diz algo que consideramos
+mau, e assim paramos de ouvi-la ou de lhe dar uma plataforma. Eu não quero
+argumentar isso agora - pelo menos desincentiva as declarações que parecem
+maldosas.
+
+Mas eu acho que há um fenômeno similar que recebe menos atenção e é ainda menos
+defensável - uma espécie de cultura de ultraje intelectual. "Como você pode ler
+esse cara quando ele diz [coisa estúpida]? Eu não quero entrar na defesa de cada
+crença estranha ou teoria da conspiração que já foi [coisa estúpida]. Eu só
+quero dizer que provavelmente não foi tão estúpido quanto os códigos bíblicos. E
+ainda assim, Newton.
+
+Algumas das pessoas que mais me inspiraram foram indesculpavelmente erradas em
+questões básicas. Mas você só precisa de uma revelação que mude o mundo para
+valer a pena ler.
+
+
+** DONE Deutsch lernen! e outros idiomas..
+:PROPERTIES:
+:EXPORT_FILE_NAME: deutsch-lernen-e-outros-idiomas
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/12"
+:EXPORT_DATE: 2018-12-15
+:END:
+Hallo zusammen und willkommen zurück mein blog! Ich bin ausgezeichnet und sie?
+(Olá a todos e bem vindos ao meu blog! Estou ótimos e vocês? - tradução para
+vocês pobres não comedores de salsichas)
+
+Você talvez estará se perguntando o porquê de algo relacionado a idiomas estar
+neste tipo de blog, onde os assuntos recorrentes são voltados ao mundo de TI
+porém já entenderá em um segundo.
+
+Uma coisa é certa, sempre achei aprender novos idiomas algo muito, MUITO
+intessante. Você ter a possibilidade de se comunicar com pessoas do outro lado
+do mundo, de culturas totalmente diferentes, passado e criações opostos ao seus.
+Isso é sem dúvida algo fascinante.
+
+E qual língua melhor para aprender do que o alemão? O processo de escolha foi o
+seguinte:
+
+Minha língua nativa -> Português. Pode ser usada no Brasil, e em Portugal
+provavelmente, há!
+
+Segunda língua -> Espanhol. Aprendi com ajuda do meu pai que é Argentino (mas é
+boa gente), pode ser usada em basicamente América do Sul inteira + Espanha. Com
+isso já temos dois pés na Europa!
+
+Terceira língua -> Inglês. Não precisa de maiores explicações. Lingua global.
+
+Quarta língua -> Alemão. Abre grandes oportunidades na Europa. Suíça, Alemanha,
+Áustria, Luxemburgo, Bélgica. Wow!!!
+
+E como eu sempre afirmo, nossa profissão no mundo *tech* é muito globalizada. Como
+fazer para arranjar um trampo maroto lá fora? Basta ser qualificado e para ter
+alguns pontos bônus, é só falar a língua do país! Isso é incrível, são poucas
+carreiras que nos fornecem uma oportunidade dessa.
+
+Hoje fica muito fácil aprender novos idiomas, eu por exemplo, só estudo
+autodidata com a ajuda de podcasts. Existe um muito legal - momento jabá
+gratuito - chamado [[https://radiolingua.com/category/coffee-break-german/][Coffee Break German]], que vem da série *Coffee Break*, onde o
+apresentador conversa com um nativo, geralmente um linguista ou entusiasta,
+desde os primeiros passos até algo intermediário para avançado - como no caso do
+Francês que já estão no nível de B2 na [[https://pt.wikipedia.org/wiki/Quadro_Europeu_Comum_de_Refer%C3%AAncia_para_L%C3%ADnguas][Escala CEFR de proficiência]], e isso é
+show de bola porque você acaba transformando o seu tempo inútil, como o tempo
+dentro do ônibus, ou no carro durante as idas e voltas para faculdade ou
+trabalho, em tempo útil de aprendizado!
+
+E depois, quais próximas línguas aprender? Talvez uma para se comunicar na Ásia
+leste, como Mandarim ou Japanês? Ou algo mais vodka como Russo? As
+possibilidades são infinitas! Ou quase. E aprender uma língua nova é quase o
+mesmo processo de aprender uma nova linguagem de programação por exemplo, no
+início é todo aquele auê, tudo é bacana, porém o tempo vai passando e você nota
+um interesse em outras línguas que parecem ser muito mais legais, com sua
+estrutura diferente. Mas aqui o importante é manter o foco e não desanimar.
+
+Vamos colocar a mão na massa e aprender coisas novas!
+
+
+** DONE Túnel ssh (ssh tunneling) - local port forwarding
+:PROPERTIES:
+:EXPORT_FILE_NAME: tunel-ssh-ssh-tunneling-local-port-forwarding
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/11"
+:EXPORT_DATE: 2018-08-11
+:END:
+Venho compartilhar algo incrível que descobri recentemente, e que talvez não
+seja muito conhecido por aí. É um procedimento chamado Túnel SSH, também
+conhecido como /SSH Tunnelling/, e tem a capacidade de resolver alguns problemas
+relativos com conexões entre servidores, e contornar bloqueios de firewall.
+
+*** Problema
+
+Precisava me conectar ao banco de dados deste site que você está acessando agora
+a fim de realizar o backup das informações das tabelas. Ele é um servidor
+POSTGRESQL remoto, e faço sua administração através da ferramenta PGADMIN, porém
+o único jeito de acessar meu servidor, é por SSH (chave pública e privada)
+porque desativei o login por usuário/senha que é o recomendado. Resumindo o
+processo, preciso me conectar ao servidor remoto, na porta 5432, por SSH.
+
+Agora imagine configurar todo esse acesso, de coleta de chave privada,
+autorização e tudo mais, em uma ferramenta como o PGADMIN que possui uma
+interface gráfica. /Um verdadeiro porre/.
+
+#+CAPTION Representação do processo de Túnel SSH. Solução - Local port forwarding
+[[https://i.imgur.com/VzGq1Gd.png]]
+
+Como sempre me conecto ao meu servidor por SSH, a configuração inicial já estava
+feita, resolvi criar um “túnel” entre meu computador e a porta usada pelo
+POSTGRESQL no servidor remoto. O comando usado para alcançar esse objetivo é o
+seguinte:
+
+#+begin_src shell
+ssh usuario@servidorRemoto.com -f -N -L 9000:localhost.com:5432
+#+end_src
+
+Desmembrando a primeira parte do comando, temos:
+
+#+begin_src shell
+ssh usuario@servidorRemoto.com -f -N
+#+end_src
+
+Primeiro nos conectamos ao nosso servidor remoto por SSH, e usamos o -f para
+manter essa conexão em background, e usamos -N para avisar que não mande nenhum
+comando para o shell deste servido. Na sequência temos:
+
+#+begin_src shell
+-L 9000:localhost:5432
+#+end_src
+
+Que é equivalente a:
+
+#+begin_src shell
+-L porta_em_seu_computador:servidor:porta_servidor
+#+end_src
+
+Então 9000 é SUA porta de seu computador que você quer criar a entrada este
+túnel para que a saída dele seja a porta 5432 do servidor remoto.
+
+Este localhost que aparece é na perspectiva do SERVIDOR REMOTO (é o localhost
+DELE), e a porta para qual ele irá redirecionar o acesso quando você alcançar
+este mesmo servidor. Ou seja, quando você acessar ~localhost:9000~ no seu
+computador, você será redirecionado para ~root@servidorRemoto.com:5432~.
+
+Ainda nessa área de túneis SSH, existem ainda o Remote port Forwarding e o
+Dynamic Port Forwarding, este último é comumente utilizado para utilizar um
+computador externo de proxy! Assim que possível irei comentar sobre estes dois
+métodos, e também irei realizar uma postagem de como utilizar chaves GPG para
+gerenciar a autenticação com SSH. Supimpa!
+
+
+** DONE Mediana ou média? quando utilizar
+:PROPERTIES:
+:EXPORT_FILE_NAME: mediana-ou-media-quando-utilizar
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/10"
+:EXPORT_DATE: 2018-06-15
+:END:
+Em primeiro lugar, quando falamos de mediana e média, esta última também
+conhecida como valor esperado, estamos falando de uma estatística de tendência
+central, ou seja, queremos saber o centro de nossa distribuição.
+
+Embora não exista uma regra definida sobre o uso de um ou outro, em linhas
+gerais a mediana é uma medida robusta que desconsidera outliers (valores
+extremos), lidando melhor com obliquidade, do inglês skewness, sendo comumente
+utilizada pra verificar a tendência central de salários, uma vez que estes são
+muito influenciados por poucos que ganham muito. Porém algumas vezes queremos
+que nossas medidas sejam influenciadas por estes valores extremos.
+
+A maneira ideal para verificar qual medida é a mais representativa de nossos
+dados, seria plotar a distribuição destes dados a fim de verificar sua
+assimetria e obliquidade, desta forma podemos realizar esta verificação, pois o
+importante é saber de onde vem esta assimetria e entende-la de acordo.
+Adicionalmente, devemos também considerar o “propósito” desta variável além de
+sua natureza “absoluta“ ou “relativa”.
+
+Note que a média também pode ser calculada após remover-se os outliers, onde
+calcular a mediana não faz muito sentido. O segredo é conhecer bem os números
+que se trabalham.
+
+Agora vou dar alguns exemplos e na sequência, colocarei qual a medida mais
+apropriada.
+
+*Em determinado mês, em uma vizinhança mora-se 10 pessoas, com a média de salário de R$5.000,00. E no outro mês um milionário se muda para esta mesma vizinhança e este ganha R$50.000,00 por mês, elevando a média salarial para R$9.090,90. Qual medida é que melhor representa essa população?*
+
+A medida que melhor representa é a mediana. Pois neste caso R$9.090,90 não
+representa efetivamente ninguém desta vizinhança. Já na mediana o valor seria de
+R$5.000,00.
+
+*Queremos determinar o tempo de prisão dado por um juiz por certo crime. Quanto
+tempo o próximo réu pode esperar pegar de prisão?*
+
+A medida que melhor representa é a média.
+
+*Tempo de corrida de 10 voltas em uma pista para determinado corredor. Em quanto
+tempo podemos esperar ele completar a pista na próxima vez que este correr?*
+
+Neste caso a média é a medida adequada.
+
+*Notas em uma matéria entre vários estudantes em uma sala. Assumindo que o nível
+de dificuldade da prova é uniforme.*
+
+É uma boa ideia considerar seu aspecto relativo através de medidas como mediana,
+quartis e etc.
+
+*Notas em várias matérias para um único estudante. A pontuação individual
+mostrará o nível de proficiência já descontado pela dificuldade do exame.*
+
+Então para chegarmos ao nível geral de proficiência, tiramos a média.
+
+*** Conclusão
+
+O grande segredo é conhecer bem o número em que se está trabalhando a fim de
+utilizar a medida apropriada. Espero ter ajudado nesta questão bem interessante.
+
+
+** DONE A estrada do machine learning
+:PROPERTIES:
+:EXPORT_FILE_NAME: a-estrada-do-machine-learning
+:EXPORT_DATE: 2018-04-02
+:END:
+Algo que me impulsionou a ir um pouco mais a fundo nos fundamentos do machine
+learning, foi essa gana de saber como a “mágica” do algoritmo acontece, porque
+no início sempre foram umas equações que no mínimo só um doutorando em
+matemática para entender, mas que ao longo de meus estudos passei a notar que
+não era mais um bicho de 7 cabeças.
+
+Logo abaixo, vou listar os conhecimentos que eu estou estudando ou já estudei, e
+que ajudou a me aprofundar no tema, e após uma descrição do porquê estuda-los e
+o material principal que li sobre ou fiz um curso.
+
+Data da última alteração: 07/06/2018
+
+*** Habilidades a serem desenvolvidas:
+- INGLÊS!!!!!!!!!!
+- Básico de Programação
+- Cálculo
+  + Limite, derivada e integral
+  + Somas de Riemann
+  + Derivadas Parciais
+  + Otimização
+- Álgebra Linear
+- Estatística
+  + Estatística Descritiva
+  + Média, Mediana, Moda, Variância, Correlação, Covariância, etc...
+- Distribuições
+- Probabilidade
+- Algoritmos de Machine Learning
+
+**** Inglês
+
+Sério, se você não sabe inglês e quer entrar nesse mundo de big data, machine
+learning, e todas essas palavras legais, recomendo você se matricular em um
+curso de inglês agora. O material disponível de qualidade em português ainda é
+muito escasso, e todas as grandes bibliotecas tem documentação na língua da
+liberdade. Basicamente 99% dos cursos que irei listar aqui são em inglês, então
+me perdoe, rs. Básico de Programação
+
+Saber programar, uma vez que ainda não exista um software onisciente capaz de
+simplesmente fazer o que você tem em mente, é um pilar do machine learning,
+afinal para poder transcrever os modelos para o computador é por meio da
+programação. Manipulação de vetores e matrizes, as plotagens gráficas, testes de
+funcionamento, mas veja, não é necessário ser um mestre da montanha no assunto,
+pois uma vez que você tenha seu modelo funcional, ele irá (provavelmente) passar
+por otimizações pelos engenheiros de software a fim de ser dado o deploy.
+
+Fiz um curso chamado CS50 que é focado em quem não sabe nada mesmo, e te dá um
+fundamento bem bacana pra continuar por conta própria.
+
+CS50, Harvard, EDX:
+https://www.edx.org/course/cs50s-introduction-computer-science-harvardx-cs50x
+
+**** Cálculo
+
+Para todo algoritmo existe um modelo, uma equação, que lhe diz como manipular os
+dados para que você obtenha o resultado final, e para que você entenda de
+verdade como isso funciona e também implementar o algoritmo na linguagem de
+programação de sua escolha é necessário entender cálculo.
+
+Se você, jovem perspicaz e sapiente, esteve em situação semelhante a minha, em
+que estudou em escola pública e teve uma educação bem deficiente, seus problemas
+acabaram! E igualmente se não foi o caso, uma fundação boa em matemática é
+essencial para poder estudar cálculo. E um assunto é necessário que se conheça é
+otimização, acredite em mim. Isso porque no ML existe o conceito de minimizar a
+função de erro, isto é, para você poder predizer os resultados com a maior
+precisão possível, então é recomendado você dar uma chapiscada nesse assunto.
+
+E agora lhes apresento o Khan Academy – para quem não conhece – onde eu aprendi
+anos de matemática em meses, um lugar mágico onde há todos esses conceitos que
+mencionei de matemática.
+
+Porém eu realmente recomendo vocë ir pegando a matemática conforme ela vai
+aparecendo em seus problemas, porque fazer todo o currículo de uma só vez pode
+ser bem massante e sua motivação ir por água abaixo.
+
+Cálculo, Khan Academy: https://pt.khanacademy.org/math/calculus-home
+
+Essência do Cálculo, 3Blue1Brown, Youtube:
+https://www.youtube.com/watch?v=WUvTyaaNkzM&list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr
+
+**** Estatística
+
+A grande difereça que eu percebi nesse tempo estudando estatística é que ela
+possui ênfase na inferência, enquanto machine learning é focada na predição. O
+importante aqui é ter uma fundação sólida em certos assuntos básicos como Média,
+Mediana, Moda, Desvio Padrão, algumas distribuições como a Normal(Gauss),
+Exponencial Negativa e também em algumas técnicas de reamostragem como
+bootstrapping.
+
+Um curso xuxu beleza mesmo é o Biostatistics Mathematical Bootcamp 1, mas não se
+engane, ele é BEM intensivo mesmo, e nele acredito que se encontra tudo o que
+você precise para conseguir entender a maioria das coisas que encontrar pela
+frente.
+
+Biostatistics Mathematical Bootcamp 1, Coursera:
+https://www.coursera.org/learn/biostatistics/ Algoritmos de Machine Learning
+
+Depois de tomar tanto tapa na cara, chegamos ao grande dia! Agora que temos toda
+a fundação da nossa pirâmide de conhecimentos podemos começar a estudar os
+algoritmos de Machine Learning.
+
+O primeiro e grande curso que recomendo é o Machine Learning, ministrado pelo
+Andrew NG, que realmente abre as portas sobre a utilização de ML para os
+problemas, demonstrando o funcionamento de regressão Linear(olha a estatística
+aqui de novo) para predizer preços de casas, regressão logística para introduzir
+o conceito de classificadores, verá o básico de uma rede neural e como funciona
+um perceptron, as melhores maneiras de você verificar os erros do seu modelo e
+por aí vai.
+
+Porém como eu havia dito, o curso tenta abranger uma grande área, te mostrando a
+intuição de alguns algoritmos e como aplicá-los, mas ainda existem muitos outros
+super úteis que não são mostrados, como aprendizado com Árvores de Decisão,
+Random Forests, Classificador Naive Bayes.
+
+E caso você tenha visto tudo isso e queira adentrar mais ainda, existe a
+especialização em Deep Learning também distribuída pelo Andrew NG, que mostra
+novamente desde o básico de redes neurais, até modelos mais avançados como redes
+neurais recorrentes(GANs) e também como estruturar um modelo para uma aplicação
+como audio, vídeo. /Fantastique my friend/.
+
+Coursera, Machine Learning https://pt.coursera.org/learn/machine-learning
+
+Coursera, Deep Learning: https://www.coursera.org/specializations/deep-learning
+
+Fast.ai: http://www.fast.ai/
+
+
+** DONE Finalmente terminei o curso de machine learning!
+:PROPERTIES:
+:EXPORT_FILE_NAME: finalmente-terminei-o-curso-de-machine-learning
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/7"
+:EXPORT_DATE: 2017-11-10
+:END:
+Depois de muita luta e visitas constantes ao Khan Academy consegui terminar o
+curso de Machine Learning, e devo dizer que abriu muito a minha mente em relação
+ao que realmente é IA e todo o funcionamento por trás disso.
+
+Toda a matemática do curso é passada durante os vídeos, pode ser um pouco
+complicado no início, principalmente se você não está familiarizado com
+matrizes, que se usa muito por sinal, mas é tranquilo. Todo o curso é
+self-paced, ou seja, pode ser feito no seu tempo, mesmo que demore dois anos.
+
+O curso é dividido em 11 semanas, e mais ou menos em cada uma você tem que
+implementar o algoritmo conversado em aula, e o legal é que você não utiliza
+nenhuma biblioteca nem nada, a implementação é bem baixo nível para que você
+possa entender realmente o que está fazendo. Eles disponibilizam uma licença
+para o MatLab que tem a duração exata da certificação, ou você pode usar a
+linguagem variante Octave que é open source.
+
+Dê uma olhada no certificado que irado!
+
+[[https://i.imgur.com/pNkAY0S.png]]
+
+Yesss!
+
+*** Qual caminho trilhar agora?
+
+Então entre puxar mais para o lado de data scientist ou estritamente engenheiro de software, resolvi que irei seguir um caminho hibrido como engenheiro de machine learning, há!
+Logo, existe muito mais a ser estudado e desbravado, próxima etapa é estudar algoritmos de entrada que não foram passados na certificação, como Naive Bayes, Random Forests, Decision Trees, e por aí em diante.
+Acho que até mesmo descobri sobre o que farei meu TCC: Algoritmos Genéticos. (Uma dica - eles imitam a evolução biológica, o quão legal é isso?)
+
+Bom, o trabalho é grande e o tempo é curto, mãos à obra!
+
+Link do curso aos interessados: https://www.coursera.org/learn/machine-learning
+
+
+** DONE Comandos que você precisa conhecer no linux
+:PROPERTIES:
+:EXPORT_FILE_NAME: comandos-que-voce-precisa-conhecer-no-linux
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/6"
+:EXPORT_DATE: 2017-10-16
+:END:
+A qualquer ponto durante o uso do Linux, você já deve ter se perguntado por que
+raios devo usar a linha de comando, se usar a interface de usuário é muito mais
+rápido?
+
+Então aqui te dou uma dica que você agradecerá imensamente no futuro. São os
+comandos:
+
++ sed
++ awk
++ grep
++ more, less
++ cat
++ pipes, redirecionamento e backsticks
+
+Para que você entenda cada um deles, vou começar explicando pelo sed.
+
+Lembrando que esse post não é para ser entendido como um tutorial de todos, e
+sim como uma informação nova que deve ser estudada. Leia, pesquise e pratique!
+Comando sed
+
+Para entender como o sed funciona, imagine uma receita de bolo. Você possui as
+entradas (ingredientes), o processamento (batedeira, forno) e as saídas (bolo
+pronto). O sed vai agir como essa parte de processamento. Faça o teste.
+
+
+#+begin_src shell
+$ echo dia | sed s/dia/noite/
+>> "noite"
+#+end_src
+
+Nesse exemplo acima, o comando echo faz simular que você tivesse escrito dia com
+o teclado, e o sed agirá substituindo a primeira palavra "dia" que encontrar
+para a palavra "noite". Muito bom!
+
+Então se nós desmembrarmos o comando, temos:
+
+|         |                                    |
+|---------+------------------------------------|
+| s       | Comando de substituição            |
+| /../../ | Delimitador                        |
+| dia     | Expressão regular à ser pesquisada |
+| noite   | String de reposição                |
+
+
+É importante notar que o comando faz exatamente o que você pede a ele, então
+caso você escrever:
+
+#+begin_src shell
+$ echo procedia | sed s/dia/noite/
+>> "procenoite"
+#+end_src
+
+E o sed funciona por linha, ou seja, se o seu arquivo possui multiplas linhas,
+ele irá trocar sempre a primeira palavra para aquela que você escolheu.
+
+Além disso possui várias outras aplicações, dê uma olhada.
+
+*** Comando awk
+
+Como o sed, o comando awk funciona para processamento de texto. Muitos comandos
+do linux produzem outputs (saídas) formatadas em linhas e colunas e é muito mais
+fácil utilizar o awk do que utilizar outras linguagens de programação ou fazer
+manualmente.
+
+*** Comando grep
+
+Devo assumir que você já ouviu falar (se não ouviu vá dar uma olhada agora)
+sobre expressões regulares, porque o grep as usa, e seu poder vem de sua
+flexibilidade.
+
+Em um dos primeiros editores de texto do Unix, para pesquisar e imprimir a
+string “tranqueira” em determinado artquivo, era necessário você digitar o
+comando:
+
+~/tranqueira/p~
+
+E para imprimir todas as linhas que continham a palavra era:
+
+~g/tranqueira/p~
+
+A letra “g” era usada como abreviação para “pesquisa global”.
+
+Então como era uma função tão comum e usada por todos, alguém decidiu fazer um
+comando próprio, muito mais simples. E este foi chamado de grep, que era o
+encurtamento de “g/regular expression/p” ou “g/re/p”.
+
+Um exemplo simples é utilizar para procurar por senhas em outro computador, você
+poderia executar:
+
+~grep senha *~
+
+Então todas as linhas em todos os arquivos que contêm essa palavra vão ser
+impressos na tela. O output seria mais ou menos:
+
+#+begin_example
+notas: se lembrar que a senha do sistema Linux é “contacinza54”, não esquecer!
+notas: guardar em outro lugar porque não é seguro ter senhas salvas no computador, hehe
+mensagem: você sabe qual é a senha do sistema? Abraço
+#+end_example
+
+
+No exemplo de notas, no mesmo arquivo a palavra “senha” foi citada duas vezes, e
+no arquivo “mensagem” foi citada uma vez. Bem simples de achar, certo?
+
+*** Pipes, Redirecionamento e Backsticks
+
+Essa parte aqui é muito bacana, e tem muitos usos diferentes.
+
+**** Pipes e Redirecionamento
+
+Quando trabalhamos com redirecionamento, estamos conversando sobre redirecionar a saída ou entrada de um comando para outro lugar ou até para um outro comando. Com isso podemos reutilizar fácilmente as informações que nos são dadas e otimizar nosso tempo.
+
+Por padrão, a maioria dos programas redirecionam para a chamada "stream" STDOUT, que seria a saída padrão, o seu monitor. Um exemplo seria abrir o terminal e digitar:
+
+#+begin_src shell
+ls -al
+>> total 27
+drwxr-xr-x  7 martin users 4096 Apr 12 19:59 .
+drwx------ 25 martin users 4096 Apr 28 17:43 ..
+drwxr-xr-x  3 martin users 4096 Apr 11 16:56 Pictures
+drwxr-xr-x  2 martin users 4096 Apr 12 20:25 Private
+drwxr-xr-x  5 martin users 4096 Apr 25 19:00 programming
+drwxr-xr-x  7 martin users 4096 Apr  9 17:28 src
+#+end_src
+
+Então todo a listagem de arquivos e pastas da sua localização atual aparecerá na
+sua tela. Agora experimente digitar:
+
+#+begin_src shell
+ls -al > listagem.txt
+#+end_src
+
+Nada irá aparecer no seu monitor. Isto acontece porque você redirecionou a saída
+do "programa" ls para o arquivo listagem.txt. Basta acessá-lo com um editor de
+texto e verá a mesma coisa que antes.
+
+**** Backsticks
+
+O backsticks é simplesmente o `(símbolo que usamos para crase). Qualquer comando
+que você colocar entre os backsticks, ele irá rodar, e seu output irá voltar
+para o console.
+
+#+begin_src shell
+cd `which programa`
+#+end_src
+
+Ou seja, primeiro o comando which é executado e seu resultado é o caminho para o
+programa, e em seguida este caminho é alimentado como argumento para o comando
+cd, que entra na pasta. Muito show, não é?
+
+
+
+
+** DONE A vida do estudante de TI da particular
+:PROPERTIES:
+:EXPORT_FILE_NAME: a-vida-do-estudante-de-ti-da-particular
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/5"
+:EXPORT_DATE: 2017-09-25
+:END:
+Sempre existiu um certo preconceito contra faculdade privada – muito maior nas
+mais acessíveis, e convenhamos que você provavelmente pensa o mesmo, porque por
+mais que se diga o contrário, para passar (e provavelmente conquistar seu
+diploma) basta pagar o boleto.
+
+Para dar um contexto, estudo na UNINOVE e estou no 4º semestre de ciências da
+computação, e se você é da área de TI parece bem absurdo acreditar se eu lhe
+contar que em uma sala de aula comum do 4º ou 5º semestre aproximadamente metade
+não sabe o que é um for loop.
+
+Se as faculdades privadas são desvalorizadas em relação as públicas, a culpa é
+somente do aluno. Aquele ditado “o aluno faz a escola“ é a pura verdade. A
+faculdade pública nada mais é que um filtro, para selecionar candidatos capazes
+de se preparar anteriormente, e que possuem garra para alcançar um certo
+objetivo. Segundo o CENSUP 2014(Censo de ensino superior), só em SP para cada
+matrícula em universidade pública existem 5 matrículas na particular.
+
+E querendo você ou não, na hora de tentar uma pós/mestrado no exterior, ou até
+mesmo ir atrás de uma boa vaga de estágio, isso faz a diferença na hora do
+recrutamento, e como o estudante de TI de faculdade privada pode contornar essa
+situação?
+
+Simples, seja autodidata. Aprenda a aprender em casa, sozinho. Utilize seu tempo
+livre que provavelmente é todo gasto com entretenimento, e use-o para melhores
+fins, como aprender coisas novas que certamente serão utilizadas no futuro.
+
+Faça um curso de inglês, o material em português é limitado, e além de toda a
+linguagem técnica ser em inglês existe muita coisa interessante que é deixada de
+aprender justamente pela falta de conhecimento na língua. Sabe a maioria das
+perguntas do Stack Overflow? Inglês.
+
+Nós da área de TI temos um “algo a mais” das outras áreas, que é justamente isso
+de estar atualizado, e se você sabe sobre tal assunto basta provar e você
+provavelmente será contratado. Mas o oposto também é real, porque se você não se
+atualizar, ficará um bom tempo procurando por um trabalho.
+
+*** Certo, e por que você está falando sobre isso?
+
+Porque por muito tempo acabei negligenciando minha educação. Muito tempo perdido
+com jogos, sem aprender nada de novo. Tentei perseguir outras áreas que não
+deram certo, mas onde essa aprendizagem foi necessária para alcançar a
+mentalidade que tenho hoje. Acredito que todos têm seu tempo para alcançar
+maturidade, e como as salas de aula possuem muitos jovens isso se intensifica,
+mas se possível não perca o seu porque depois você será recompensado e não terá
+arrependimentos.
+
+Um background que posso te dar é que vim de escola pública e sei como as coisas
+funcionam, a própria correnteza te joga para o caminho errado. Existem com
+certeza as exceções, mas o aluno comum e maioridade é aquele nunca foi muito de
+estudar para as provas, quanto mais estudar em casa para qualquer outra coisa. E
+sinto lhe dizer que se continuar desse jeito, no TI você não tem espaço.
+
+
+** DONE Se iniciando no machine learning   :machine:learning:python:coursera:
+:PROPERTIES:
+:EXPORT_FILE_NAME: se-iniciando-no-machine-learning
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/3"
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER+: :description "A história de como comecei os estudos em Machine Learning."
+:EXPORT_DATE: 2017-08-25
+:END:
+Há aproximadamente duas semanas, comecei um curso online no [[https://www.coursera.org/learn/machine-learning][Coursera]], chamado de
+introdução ao Machine Learning, e este apresenta uma introdução ao /supervised
+learning/, e ao unsupervised learning, detalhando cada um, e depois você precisa
+implementá-los e tal, bem interessante para quem quer começar a entrar ná área.
+Lá você aprende o funcionamento interno das coisas, não é só simplesmente baixar
+uma biblioteca e começar a usar, acho isso bem interessante porque você acaba
+entendendo melhor as aplicações para cada caso diferente.
+
+*** O curso
+
+A linguagem utilizada no curso é Octave ou Matlab, sendo a primeira opensource,
+e a segunda é disponibilizada uma licença gratuita que dura té o fim do
+cursinho, recomendo usá-la, porque depois o programa passa a custa $600,00 para
+estudantes *(ai meu rim!)*.
+
+Dica marota: Eu sempre estudei em escola pública, então a maioria do meu
+conhecimento matemático é autodidata (rs), e o curso já se inicia com uma
+notação matemática fora do comum pra quem não é acostumado. Eu no caso tive que
+ir ao Khan Academy dar um estudada em cálculo para tentar entender o que estava
+acontencendo. Observe que isso não é necessário, eu que tive essa vontade mesmo,
+além de que o próprio professor avisa que não necessário derivar e etc.
+
+*** E depois?
+
+Existe um site muito legal que acabei conhecendo, chamado [[https://www.kaggle.com/][Kaggle]]. Nele há
+"competições" criada pelos usuários ou pela própria staff do site, como o Kaggle
+[[https://www.kaggle.com/c/titanic][Titanic]] (bem famoso), onde é dado um data set e dali você tira suas análises.
+
+
+
+** DONE Gerenciando DNS do domínio
+:PROPERTIES:
+:EXPORT_FILE_NAME: gerenciando-dns-do-dominio
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/2"
+:EXPORT_DATE: 2017-08-19
+:END:
+Se você já colocou seu website na internet, certamente já ouviu falar sobre DNS
+e as dores de cabeça que dá ficar mexendo, então nesse post vou tentar trazer
+umas informaçòes de um jeito menos técnico que possam ajudar.
+
+O DNS é sistema de nome de domínios, que genericamente significa que quando você
+escreve uma frase na barra de endereços, ele vai traduzir essa informação para
+um IP que o computador pode entender.
+
+Uma convenção que é usada na hora de mexer com DNS pelos sites de hospedagem, é
+no caso do @ representar o seu domínio.
+
+Para os exemplos a seguir, vamos considerar o meu domínio, que é
+[[https://martinmariano.com][martinmariano.com]]. Ele é gerenciado pela [[https://godaddy.com][GoDaddy.com]], e hospedado pela
+[[https://digitalocean.com][DigitalOcean]], e tem seus registros MX pela [[https://namecheap.com][NameCheap]].
+
+Lembrando que todas estas informações são de domínio público, e podem ser
+verificadas por qualquer um na internet utilizando de ferramentas do tipo DNS
+Lookup, um exemplo seria https://mxtoolbox.com/DNSLookup.aspx.
+
+*** Visão Geral
+
+Estes abaixo seus meus registros DNS vistos do painel de gerenciamente de DNS do
+site da GoDaddy.com.
+
+[[http://i.imgur.com/KHkJ7tk.jpg]]
+
+**** Tipos de registros
+
+A: Ele vai apontar seu domínio para um ip, este onde está com o @ na coluna de
+nome completo. aponta para o ip fornecido pela minha hospedagem.
+
+Você irá notar que existe um outro registro do tipo A, que é chamado mg, ele
+significa um subdomínio, que no caso você o acessa em mg.martinmariano.com. No
+meu caso é utilizado por uma API de emails.
+
+AAAA: Funciona exatamente igual ao registro A, mas aponta à um ipv6.
+
+CNAME: O Cname é basicamente um apelido, que quando você o digita, é
+redirecionado para um domínio. Se este dominio é seu próprio registro A, esse
+atuará como uma máscara. Por exemplo, nos meus registros pegue o exemplo do
+CNAME com o nome de www, ele aparece como www.martinmariano.com, mas na verdade
+por baixo você está acessando martinmariano.com (Você não pode colocar um CNAME
+para direcionar para um IP, somente para um domínio.)
+
+TXT: Esses contêm algum tipo de informação adicional requerida por algum outro
+site, no caso eu os utilizo para o redirecionamento de emails, e também para
+usar o google web console.
+
+MX: São os registros de email do seu domínio. Você nota na minha configuração,
+que quando utilizado o meu subdomínio mg.martinmariano.com, os emails são
+gerenciados por outra aplicação, no caso o [[http://www.mailgun.com][MailGun]], que é uma API para enviar e
+receber emails.
+
+NS: São os registros de nomes, basicamente os que cuidam do seu DNS. Os que eu
+utilizo são os padrões fornecidos pela própria GoDaddy.
+
+*** Resumão
+
+Este foi um post bem rápido para servir de apoio a alguém que quer configurar
+seu domínio/hospedagem ou entender como funcionam os registros rapidamente.
+
+
+** DONE Desenvolvimento de um blog usando python + flask
+:PROPERTIES:
+:EXPORT_FILE_NAME: desenvolvimento-de-um-blog-usando-python-flask
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :url "/post/1"
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER+: :description "Descrevendo como o blog antigo escrito em python foi desenvolvido. Antigo, o blog já mudou!"
+:EXPORT_DATE: 2017-08-13
+:END:
+Neste post vou explicar um pouco sobre como foi realizar a construção deste blog
+do zero.
+
+*** Fala logo da parte técnica que estou curioso!
+
+Tudo bem, vou dizer. Todo o back-end foi feito em Python, utilizando o framework
+Flask, já o front-end foi construído com um framework bem interessante chamado
+Semantic-UI que é semelhante ao Boostrap que talvez você já deva conhecer. Usei
+bastante javascript também, principalmente para a dashboard, onde toda a
+inserçào, alteraçào e deleção de posts são feitas por meio de AJAX. Se você for
+curioso de verdade basta ver o código-fonte do site, hehe.
+
+Na parte da banco de dados, usei o PostgreSQL que é um dos banco de dados que
+mais ganha seguidores no mundo (fonte), e na gestão dele usei o SQLAlchemy que ,
+genericamente, é um conjunto de ferramentas e ORM para Python. Nesse ORM, cada
+tabela funciona como uma classe, e você acaba utilizando o SQL como se estivesse
+programando orientado a objetos. Supimpa.
+
+Nessa mesma parte de postagem, como todos os requests são feitos por AJAX,
+montei uma API rest privada, onde o caminho fica centralizado, e as ações são
+feitas de acordo com os devidos métodos http, como PUT, POST, DELETE, e todos
+estes consomem o arquivo JSON enviado pelo cliente.
+
+Você mesmo consegue ver o JSON deste post por exemplo, basta entrar em
+http://martinmariano.com/post/json/1. Este é o único exposto pela API.
+
+E os posts ainda contam com syntax highlighting, wow!!
+
+#+begin_src python
+if visitante.status == 'surpreso':
+    return ':)'
+
+else:
+    return ':((('
+#+end_src
+
+*** E porque tu não usou WordPress?
+
+Porque eu não quis! Brincadeira. A vontade de fazer um site pessoal já vinha de
+alguns tempos, e como eu estava tirando uma certificação chamada CS50 (dê uma
+olhada) que precisava de um projeto e então resolvi meter a cara e fazer.
+
+Já havia desenvolvido alguns sites estáticos - aqueles que não tem nenhum banco
+de dados, ou alguma interaçào significativa com o usuário cliente - porém nada
+algo desse tamanho, que possuísse um sistema de banco de dados relacional e que
+misturasse outras linguagens.
+
+Sofri um pouco na parte do deploy, onde o universo não tava querendo ser muito
+amigável comigo, mas no fim deu tudo certo. Acabei comprando o domínio no
+GoDaddy e a hospedagem é feita pela Digital Ocean, que vende VPSs carinhosamente
+chamados de droplets (gotinhas). Que lindo, não? Os preços são bem camaradas,
+inclusive se você quiser $10 de desconto basta clicar no meu referral, yes!
+
+*** Beleza, e quem lê um blog em 2017?
+
+Quando você tem alguma dúvida relacionado à programação, você joga no google e
+ou você cai no stackoverflow, ou em um blog. Com sorte minha você viu algo
+interessante aqui e resolveu ler um outro post. Como sou um desenvolvedor
+iniciante tentarei postar as dificuldades inerentes de quem está começando.
+
+*** Resumindo
+
+Foi uma experiência bem bacana montar tudo, aprendi mais sobre python, js, web
+em geral (dns, http), linux na parte de segurança, git. Se você quer aprender de
+verdade, recomendo iniciar um projetinho, nem que seja de brincadeira, no mínimo
+você pega gosto pela coisa e começa aprender mais e mais, e reitero que é muito
+viciante, principalmente quando bate aquele "click" que você está pegando o
+jeito de programar.
+
+Qualquer dúvida ou sugestão basta me mandar um email na seção de contato ou
+postar um comentário abaixo.
+
+
+* Clojure
+
+** TODO Cider shadow-cljs sane defaults
+:PROPERTIES:
+:EXPORT_FILE_NAME: cider-for-both-server-and-shadow-cljs
+:EXPORT_DATE: <2024-02-20 Tue> 
+:END:
+
+#+BEGIN_SRC lisp-data
+((clojure-mode
+  (cider-lein-parameters . "with-profile -user,+pretty,+dev-local,+dev,+test repl :headless :host localhost")
+  (cider-ns-reload-after-fn . "user/restart")
+  (cider-ns-refresh-after-fn . "user/reset"))
+ (clojurescript-mode
+  (cider-preferred-build-tool . shadow-cljs))
+ (nil
+  (cider-default-cljs-repl . shadow)
+  (cider-shadow-default-options . ":app")))
+#+END_SRC
+[[file:~/Documentos/Programming/Clojure/zougue-mpms/.dir-locals.el][file:~/myproject/.dir-locals.el]]
+
+
+* Rust

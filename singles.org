@@ -1,0 +1,77 @@
+#+HUGO_BASE_DIR: .
+#+HUGO_SECTION: .
+#+HUGO_WEIGHT: auto
+
+* Singles
+
+** About me
+:PROPERTIES: 
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :resume-path /static/resume.pdf
+:EXPORT_FILE_NAME: about-me
+:END:
+
+My name is Martin Mariano and I'm a passionate developer interested in
+web development, embedded systems and tons of other stuff. I founded
+the CS2 marketplace (originally on cs:go)
+[[https://mercadoskin.com][MercadoSkin]] and authored some rust open
+source projects.
+
+I'm currently living in São Paulo, Brazil and open for work. If you
+want to contact me, you can reach me via one of the following
+communication channels:
+
+    - via [[mailto:contato@martinmariano.com][email]]
+    - find me on [[https://github.com/saskenuba][github]]
+    - or [[https://www.linkedin.com/in/martinmariano][linkedIn]]
+
+My usual nickname is saskenuba.
+
+All of the open source stuff I work on is MIT licensed which means you
+can do with it whatever you want.
+
+*** About this Website
+
+The website itself is written with org-mode and exported to markdown
+using org-hugo.
+
+*** Why saskenuba?
+
+Oh god. I was 12 years old, okay? It is a word play of "Sasuke" (a
+character from the Naruto anime) and noob. Yes, I was nerdy (still am,
+though).
+
+*** Misc
+
+As of 02-20-2024, I can bench 90kg; squat 117kg and deadlift 140kg. I
+was once run over by a motorcycle.
+
+
+** Projects
+:PROPERTIES:
+:EXPORT_FILE_NAME: projects
+:END:
+
+Over the last couple of years I worked on a number of open source
+projects and also commercial ones. Most of them were Rust, along with
+Clojure and Clojurescript.
+
+This list is widely incomplete, lots of small things can be found on
+my github profile.
+
+*** Open Source Libraries
+
+**** Rust:
+
+- [[https://github.com/saskenuba/acls#?][ACLS]] - Another clojure lsp
+  server, application - 2023
+- [[https://github.com/saskenuba/SteamHelper-rs][SteamHelpers-rs]] - a
+  collection of crates to interact with Valve's Steam, library - 2023
+- [[https://github.com/saskenuba/pix-toolbelt][PIX Toolbelt]] - BACEN
+  compliant PIX client and specification, library - 2022
+- [[https://github.com/saskenuba/yapay-sdk-rust][Yapay SDK]] -
+  Strongly typed client for YAPAY, library - 2022
+
+*** Applications
+
+- [[https://mercadoskin.com][MercadoSkin]] - Marketplace for CS2
+  items, cashout for real money - 2024
