@@ -1,6 +1,6 @@
 {{ define "main" }}
 
-{{ range  where .Site.RegularPages "Section" "post" }}
+{{ range  sort (where .Site.RegularPages "Section" "post") "Date" "desc" }}
 <div class="entry-overview">
     <span class="date">{{ time.Format "January 2, 2006" .Date }}</span>
 
