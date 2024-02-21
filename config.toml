@@ -1,7 +1,7 @@
 baseURL = ""
 languageCode = "pt"
 defaultContentLanguage = "pt-br"
-title = "Martin Mariano | Thoughts"
+title = "Martin Mariano's Thoughts"
 preserveTaxonomyNames = true
 enableRobotsTXT = true
 enableEmoji = true
