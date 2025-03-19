@@ -40,5 +40,5 @@ though).
 
 ## Misc {#misc}
 
-As of 02-20-2024, I can bench 90kg; squat 117kg and deadlift 140kg. I
+As of 03-19-2025, I can bench 100kg; squat 130kg and deadlift 165kg. I
 was once run over by a motorcycle.
